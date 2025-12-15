@@ -1,0 +1,69 @@
+version: '2'
+services:
+  namenode:
+    image: ramilu90/hadoop-namenode
+    container_name: namenode
+    platform: linux/amd64
+    volumes:
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/friends-mapreduce.txt:/opt/friends-mapreduce.txt
+      - /home/iitgcpuser/iit/lab3_4_map_reduce/mapreduce-design-patterns/src/main/resources:/opt/hadoop/resources
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/piggybank-0.16.0.jar:/opt/piggybank-0.16.0.jar
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 50070:50070
+
+  datanode:
+    image: ramilu90/hadoop-datanode
+    platform: linux/amd64
+    container_name: datanode
+    depends_on: 
+      - namenode
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 50075:50075
+
+  resourcemanager:
+    image: ramilu90/hadoop-datanode
+    platform: linux/amd64
+    hostname: resourcemanager
+    command: [ "yarn", "resourcemanager" ]
+    depends_on:
+      - namenode
+      - datanode
+    ports:
+      - 8088:8088
+    env_file:
+      - ./hadoop-hive.env
+    volumes:
+      - ./test.sh:/opt/test.sh
+  nodemanager:
+    image: ramilu90/hadoop-datanode
+    platform: linux/amd64
+    command: [ "yarn", "nodemanager" ]
+    env_file:
+      - ./hadoop-hive.env
+  pig:
+    image: ramilu90/pig
+    container_name: pig
+    platform: linux/amd64
+    depends_on:
+      - namenode
+      - datanode
+      - resourcemanager
+    environment:
+      - PIG_CONF_DIR=/opt/pig/conf
+      - HADOOP_CONF_DIR=/etc/hadoop/conf
+    volumes:
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/recharge.input:/opt/recharge.input
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/l_get_friends.pig:/opt/l_get_friends.pig
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/friends.txt:/opt/friends.txt
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/piggybank-0.16.0.jar:/opt/piggybank-0.16.0.jar
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/l_get_friends_mapreduce.pig:/opt/l_get_friends_mapreduce.pig
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/wordcount.pig:/opt/wordcount.pig
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/pig_conf:/opt/pig/conf/
+      - /home/iitgcpuser/iit/lab6/hadoop-pig-dockercompose/hadoop_conf:/etc/hadoop/conf 
+    command: tail -f /dev/null
